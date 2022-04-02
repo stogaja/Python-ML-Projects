@@ -8,4 +8,4 @@ The main question is **whether the total of blue cars in the area of zip code 75
 
 The code work on my research is presented above and the following is a snippet of some of the pearson's correlation:
 
-![My Portfolio](https://github.com/stogaja/Python-ML-Projects/blob/main/image.png)
+![My Portfolio](https://github.com/stogaja/Python-ML-Projects/blob/main/Autolib/image.png)
