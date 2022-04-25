@@ -1,39 +1,15 @@
-### a) Specifying the Question
+### Prediction of house prices for Hass Consulting Company upto 2015.
 
-The analysis aims to study the factors that affecting the price of houses. we are required to do this using information sourced from real estate properties that was collected over a few years.
+#### Research done by Stephen Ogaja
 
-### b) Defining the Metric for Success
-The metric for success of the project is to build a model that can accurately predict the sale price of a house with a high level of accuracy.
+## Description
 
-### c) Understanding the Context
-Hass Consulting Company is a real estate firm that offers investment-grade developments all over Nairobi City. The developments offered have been conceptualized by their development team to be high quality assets using a data-driven approach in planning and design, that gears property for high rental returns and an escalated rate of capital growth.
+### The project invlolves the use of various regression algorithms for the purpose of predicting house prices in King County, in 2015.
 
-### d) Recording the Experimental Design
-Perform your EDA
+## Technologies Used
 
-#### 5 Performing regression analysis.
+#### Programming language: Python, Jupyter Notebook
 
-Incorporate categorical independent variables into your models.
+#### Pyhton libraries Used: Numpy, Pandas, SciPy, Scikit-Learn, Matplotlib and Seaborn, Tableau.
 
-Check for multicollinearity.
-
-Perform regression analysis using the following techniques and access their performance, giving a recommendation of the best:
-
-#### 1.Multiple Linear Regression
-
-#### 2.Quantile Regression
-
-#### 3.Ridge Regression
-
-#### 4.Lasso Regression
-
-#### 5.Elastic Net Regression
-
-Provide a recommendation based on your analysis.
-
-Create residual plots for your models, and assess heteroskedasticity using Barlett's test.
-
-Challenge your solution by providing insights on how you can make improvements in model improvement.
-
-### e) Data Relevance
-The data provided for this project is relevant and has been provided by Hass Consulting and is available on their website.
+#### Software: Visual Studio Code
