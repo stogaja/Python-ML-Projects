@@ -1,4 +1,4 @@
-![My Portfolio](https://github.com/stogaja/Python-ML-Projects/blob/main/Regression with Hass Consulting Company/house.jpeg)
+![My Portfolio](https://github.com/stogaja/Python-ML-Projects/blob/main/Regression%20with%20Hass%20Consulting%20Company/house.jpeg)
 
 ### Prediction of house prices for Hass Consulting Company upto 2015.
 
