@@ -1,3 +1,5 @@
+![My Portfolio](https://github.com/stogaja/Python-ML-Projects/blob/main/Regression with Hass Consulting Company/house.jpeg)
+
 ### Prediction of house prices for Hass Consulting Company upto 2015.
 
 #### Research done by Stephen Ogaja
