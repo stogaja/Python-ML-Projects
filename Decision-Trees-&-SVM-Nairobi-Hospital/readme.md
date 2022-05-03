@@ -15,15 +15,15 @@
 
 Hypothyroidism signs and symptoms may include:
 
-Fatigue
-Increased sensitivity to cold
-Constipation
-Dry skin
-Weight gain
-Puffy face
-Hoarseness
-Muscle weakness
-Elevated blood cholesterol level
+###### 1. Fatigue
+###### 2. Increased sensitivity to cold
+###### 3. Constipation
+###### 4. Dry skin
+###### 5. Weight gain
+###### 6. Puffy face
+###### 7. Hoarseness
+###### 8. Muscle weakness
+###### 9. Elevated blood cholesterol level
 #### d) Recording the Experimental Design
 ###### Application of techniques such as exploratory data analysis, such as Univariate, Bivariate, in this study to determine the relationships and differences between different variables. We shall also use Decision Trees and Support Vector Machine to make predictions.
 
