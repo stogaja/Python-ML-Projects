@@ -2,7 +2,7 @@
 
 ## Titanic Survival Rate Prediction
 
-![alt text](https://cdn.britannica.com/79/4679-050-BC127236/Titanic.jpg)
+![alt text](https://media.nationalgeographic.org/assets/photos/000/273/27302.jpg)
 
 ## Explanation
 
@@ -15,7 +15,7 @@ The project was carried out to create a model that could predict the survival of
 
 ## Email Filtering
 
-![alt text](https://www.feedblitz.com/wp-content/uploads/2018/11/Spam.jpg)
+![alt text](https://www.hostpapa.ie/blog/wp-content/uploads/2019/05/spam-mail.jpg)
 
 #### Spam email flagging.
 
