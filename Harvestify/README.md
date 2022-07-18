@@ -23,15 +23,9 @@ This is a POC(Proof of concept) kind-of project. The data used here comes up wit
 ## DATA SOURCE 📊
 
 - [Crop recommendation dataset ](https://www.kaggle.com/atharvaingle/crop-recommendation-dataset) (custom built dataset)
-- [Fertilizer suggestion dataset](https://github.com/Gladiator07/Harvestify/blob/master/Data-processed/fertilizer.csv) (custom built dataset)
+- [Fertilizer suggestion dataset](https://github.com/stogaja/Harvestify/blob/master/Data-processed/fertilizer.csv) (custom built dataset)
 - [Disease detection dataset](https://www.kaggle.com/vipoooool/new-plant-diseases-dataset)
 
-## Notebooks 📓
-
-##### I have also published the corresponding code on Kaggle Notebooks.
-
-- [Crop Recommendation](https://www.kaggle.com/atharvaingle/what-crop-to-grow)
-- [Disease Detection](https://www.kaggle.com/atharvaingle/plant-disease-classification-resnet-99-2)
 
 # Built with 🛠️
 
@@ -91,7 +85,7 @@ This is a POC(Proof of concept) kind-of project. The data used here comes up wit
 ## How to run locally 🛠️
 
 - Before the following steps make sure you have [git](https://git-scm.com/download), [Anaconda](https://www.anaconda.com/) or [miniconda](https://docs.conda.io/en/latest/miniconda.html) installed on your system
-- Clone the complete project with `git clone https://github.com/Gladiator07/Harvestify.git` or you can just download the code and unzip it
+- Clone the complete project with `git clone https://github.com/stogaja/Harvestify.git` or you can just download the code and unzip it
 - **Note:** The master branch doesn't have the updated code used for deployment, to download the updated code used for deployment you can use the following command
 
   ```
@@ -144,7 +138,7 @@ This was my first big project so there are lot of things to improve upon
 
 ## License 📝
 
-This project is licensed under [GNU (GENERAL PUBLIC LICENSE)](https://github.com/Gladiator07/Harvestify/blob/master/LICENSE).
+This project is licensed under [GNU (GENERAL PUBLIC LICENSE)](https://github.com/stogaja/Harvestify/blob/master/LICENSE).
 
 ## Contact 📞
 
