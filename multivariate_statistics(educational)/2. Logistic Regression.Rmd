@@ -1,0 +1,225 @@
+---
+title: "MESA8668 - Logistic Regression"
+author: "Steve"
+output:
+  pdf_document:
+fontsize: 12pt
+geometry: margin = 0.8in
+header-includes:
+- \setlength\parindent{24pt}
+- \usepackage{placeins}
+- \usepackage{setspace}
+- \usepackage{chngcntr}
+- \usepackage{array}
+- \usepackage{graphicx}
+- \usepackage{caption}
+- \counterwithin{figure}{section}
+- \counterwithin{table}{section}
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo=FALSE, message=FALSE, warning=FALSE, comment=NA, 
+  fig.height=8, fig.width=8
+)
+options(max.print = 2000, tibble.print_max = 100)
+```
+
+
+```{r results='hide'}
+#empty environment.
+rm(list = ls())
+
+# Set directory.
+setwd("...")
+```
+
+
+
+
+```{r}
+# Prepare the data and check the descriptive statistics.
+
+# Load the data files HBAT and HBAT_splits.
+library(foreign)  ## package used for reading sav data files.
+HBAT <- read.spss("HBAT.sav", use.value.labels=F, to.data.frame=TRUE)
+HBAT_SPLITS <- read.spss("HBAT_SPLITS.sav", use.value.labels=F, to.data.frame=TRUE)
+
+# Merge the two files so that you can filter the cases by split variables.
+data <- merge(HBAT, HBAT_SPLITS, by.x = "id", by.y = "id")
+
+
+# Subset the data. 
+library(tidyverse)  ## combination of packages such as dplyr and ggplot2, and pipes (%>%) as used below.
+
+# Define Training data with split60=0.
+data_train <- data %>% filter(split60==0)
+
+# Define testing data with split60=1.
+data_test <- data %>% filter(split60==1)
+
+
+# names() function helps see the variable names in a dataset.
+names(data_train)
+
+# You can check the first couple of rows in the data file as seen below.
+# This will open in a separate tab.
+View(head(data_train))
+
+
+
+# Descriptive statistics.
+library(psych)
+describe(data_train[,c(1:24)])
+
+
+# Bar chart for the outcome variable.
+data_train$x4 <- as.factor(data_train$x4)  # define the outcome variable as factor/categorical.
+
+plot(data_train$x4, main="Bar Plot of x4",
+     xlab="Frequency", ylab="x4")  # plot the bar chart.
+
+
+
+# Assessing univariate effects.
+
+# glm() function in R is used to run generalized linear models.
+# family argument is used for the error distribution. 
+# For logistic regression, family is 'binomial'. 
+
+# In order to run univariate logistic regression models with each variable we have in the data,
+# we can use "lapply" function to create a list of the results as shown.
+
+varlist <- names(data_train)[7:19]  # vector of variables to be used as predictors.
+
+models <- lapply(varlist, function(x) {
+  glm(substitute(x4 ~ i, list(i = as.name(x))), family=binomial, data = data_train)})
+
+# As seen in the summaries of the models,
+# x6, x11, x12, x13, and x17 are significant predictors of the grouping variable "x4".
+lapply(models, summary) # print the summaries for each model in the list.
+lapply(models, coefficients) # print the estimates for each model in the list.
+
+summary(models[[1]])  # if you want to check the output seperately for each model.
+
+
+
+# Model estimation.
+
+# Base Model:
+full.model_train <- glm(x4 ~ x6+x7+x8+x9+x10+x11+x12+x13+x14+x15+x16+x17+x18, # formula for the base (full) model.
+                  data = data_train, # data source.
+                  family = binomial(link = 'logit')) # outcome distribution and link function.
+
+summary(full.model_train)  # print the summary of the output for the full model.
+
+
+# LogLikleihood ratio test and Pseudo R-squared.
+library(rcompanion)  # this package provides three types of common pseudo R-squared methods.
+nagelkerke(full.model_train)  # print pseudo-R squared.
+
+
+
+
+# Step 1: add first variable X13 (y ~ x13).
+model1_train <- glm(x4 ~ x13, # formula for the first model.
+              data = data_train, # data source.
+              family = binomial(link = 'logit')) # outcome distribution and link function.
+
+summary(model1_train)   # print the summary of the output for the first model.
+
+nagelkerke(model1_train)
+
+
+# Fitted values based on the first model.
+fitted(model1_train)
+
+# These probabilities can be recoded as categories 0 and 1.
+class_mod1_train <- ifelse(model1_train$fitted.values >= 0.5, 1, 0)
+
+# Hit ratios for the training data: 
+# combination of 0-0 and 1-1 cells 
+# (31.67% + 41.67% = 73.3%)
+table(data_train$x4, class_mod1_train)  # hit ratios as number of cases.
+prop.table(table(data_train$x4, class_mod1_train)) # hit ratios as percentages.
+
+
+
+# Hit ratios for the testing data: 
+# combination of 0-0 and 1-1 cells 
+# (12.5% + 62.5% = 75%)
+model1_test <- glm(x4 ~ x13, 
+                    data = data_test, # data source.
+                    family = binomial(link = 'logit')) 
+
+class_mod1_test <- ifelse(model1_test$fitted.values >= 0.5, 1, 0)
+
+
+table(data_test$x4, class_mod1_test)  # hit ratios as number of cases.
+prop.table(table(data_test$x4, class_mod1_test)) # hit ratios as percentages.
+
+
+
+
+
+# Step 2: add second variable X17 (y ~ x13 + x17).
+model2_train <- glm(x4 ~ x13 + x17, # formula for the second model.
+                    data = data_train, # data source.
+                    family = binomial(link = 'logit')) # outcome distribution and link function.
+
+summary(model2_train)   # print the summary of the output for the second model.
+
+nagelkerke(model2_train)  # print pseudo-R squared.
+
+
+# Fitted values based on the first model.
+fitted(model2_train)
+
+# These probabilities can be recoded as categories 0 and 1.
+class_mod2_train <- ifelse(model2_train$fitted.values >= 0.5, 1, 0)
+
+
+# Hit ratios for the training data: 
+# combination of 0-0 and 1-1 cells.
+# (41.67% + 46.67% = 88.3%)
+table(data_train$x4, class_mod2_train)  # hit ratios as number of cases.
+prop.table(table(data_train$x4, class_mod2_train)) # hit ratios as percentages.
+
+
+# Hit ratios for the testing data: 
+# combination of 0-0 and 1-1 cells. 
+# (22.5% + 57.5% = 80%)
+model2_test <- glm(x4 ~ x13 + x17, 
+                   data = data_test, # data source.
+                   family = binomial(link = 'logit')) 
+
+class_mod2_test <- ifelse(model2_test$fitted.values >= 0.5, 1, 0)
+
+
+table(data_test$x4, class_mod2_test)  # hit ratios as number of cases.
+prop.table(table(data_test$x4, class_mod2_test)) # hit ratios as percentages.
+
+
+
+
+
+# Stepwise approach.
+
+# Null model (y~1).
+null.model_train <- glm(x4 ~ 1, # formula for the null model.
+                  data = data_train, # data source.
+                  family = binomial(link = 'logit')) # outcome distribution and link function.
+
+summary(null.model_train)  # print the output for the null model.
+
+
+# The function "step()" allows seeing the model comparions
+# by adding the variables to the base model.
+# In the output, it shows the models that are the most parsimonious
+# but also presents the models with better fit.
+forwards <- step(null.model_train,
+                 scope=list(lower=formula(null.model_train),upper=formula(full.model_train)),
+                 direction = "forward")
+
+#
+```

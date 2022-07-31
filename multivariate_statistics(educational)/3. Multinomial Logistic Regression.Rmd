@@ -1,0 +1,149 @@
+---
+title: "MESA8668 - Multinomial Logistic Regression"
+author: "Steve"
+output:
+  pdf_document:
+fontsize: 12pt
+geometry: margin = 0.8in
+header-includes:
+- \setlength\parindent{24pt}
+- \usepackage{placeins}
+- \usepackage{setspace}
+- \usepackage{chngcntr}
+- \usepackage{array}
+- \usepackage{graphicx}
+- \usepackage{caption}
+- \counterwithin{figure}{section}
+- \counterwithin{table}{section}
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo=FALSE, message=FALSE, warning=FALSE, comment=NA, 
+  fig.height=8, fig.width=8
+)
+options(max.print = 2000, tibble.print_max = 100)
+```
+
+
+```{r results='hide'}
+#empty environment.
+rm(list = ls())
+
+# Set directory.
+setwd("...")
+```
+
+
+
+
+```{r}
+# Load data file "space".
+library(foreign)
+data_space <- read.spss("space.sav", use.value.labels=F, to.data.frame=TRUE)
+
+# Variables in the dataset.
+names(data_space)
+
+
+# Make sure to format categorical variables.
+data_space$space <- as.factor(data_space$space)
+data_space$male <- as.factor(data_space$male)
+data_space$income3 <- as.factor(data_space$income3)
+data_space$prestige3 <- as.factor(data_space$prestige3)
+data_space$politics <- as.factor(data_space$politics)
+
+
+
+# Step 1. Crosstabulation of response by gender.
+with(data_space, table(male, space))  #count.
+round( prop.table(with(data_space, table(male, space))), 3)  #probability.
+
+
+
+# Step 2. Fit multinomial logistic regression model.
+# First, set the reference groups for the categorical variables.
+# function relevel() helps defining the reference group as shown below.
+data_space$space <- relevel(data_space$space, ref = "2") # reference category:"just right"
+data_space$male <- relevel(data_space$male, ref = "1") # reference group: "male"
+
+
+# package "nnet" in R is commonly used for multinomial logistic regression models.
+#install.packages("nnet")
+library(nnet)
+
+# Run the model: space ~ gender.
+MLR_mod1 <- multinom(space ~ male, data = data_space)
+summary(MLR_mod1)  # output for the model.
+
+
+# In order to calculate the odds-ratios from the parameter estimates:
+# females are less likely than males to select "too little" compared to "just right".
+exp(-0.575)
+
+# females are more likely than males to select "too much" compared to "just right".
+exp(0.355)
+
+# You can also use this shortcut.
+exp(coef(MLR_mod1))
+
+
+
+# Model fit:
+# 1. Likelihood ratio tests between this first model and intercept-only model.
+# First, create an intercept-only (null) model.
+MLR_null <- multinom(space ~ 1, data = data_space)
+
+# Likelihood ratio test.
+anova(MLR_null, MLR_mod1, test = "Chisq")  
+
+
+# 2. The multinom() function does not provide a Wald test.
+# We can use 'AER' package in R.
+#install.packages("AER")
+library(AER)
+coeftest(MLR_mod1)  # Wald test output for the estimates.
+
+# 3. AIC and BIC measures.
+AIC(MLR_null); AIC(MLR_mod1) # AICs.
+BIC(MLR_null); BIC(MLR_mod1) # BICs.
+
+
+# 4. Classification
+# Plotting the predicted classes and probabilities.
+MLR_mod1_class <- predict(MLR_mod1, data_space, type = "class")
+MLR_mod1_prob <- predict(MLR_mod1, data_space, type = "probs")
+
+head(MLR_mod1_prob)
+
+# Classification matrix.
+prop.table(table(data_space$space, MLR_mod1_class))
+
+
+
+
+# Step 3. Add Prestige to the model: space ~ gender + prestige.
+MLR_mod2 <- multinom(space ~ male + prestige, data = data_space)
+summary(MLR_mod2)  # output for the model.
+
+
+# Wald test output for the estimates.
+coeftest(MLR_mod2)  
+
+ 
+
+# Also: Full model.
+# First, set the reference groups.
+data_space$income3 <- relevel(data_space$income3, ref = "1")
+data_space$prestige3 <- relevel(data_space$prestige3, ref = "1")
+data_space$politics <- relevel(data_space$politics, ref = "1")
+
+
+# Create the full model with 4 x variables (male, income3, prestige3, politics).
+MLR_full <- multinom(space ~ male + income3 + prestige3 + politics, data = data_space)
+summary(MLR_full)
+
+# Wald test output for the estimates.
+coeftest(MLR_full) 
+```
+

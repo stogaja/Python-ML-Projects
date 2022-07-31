@@ -1,0 +1,186 @@
+---
+title: "MESA8668 - Confirmatory Factor Analysis"
+author: "Steve"
+output:
+  pdf_document:
+fontsize: 12pt
+geometry: margin = 0.8in
+header-includes:
+- \setlength\parindent{24pt}
+- \usepackage{placeins}
+- \usepackage{setspace}
+- \usepackage{chngcntr}
+- \usepackage{array}
+- \usepackage{graphicx}
+- \usepackage{caption}
+- \counterwithin{figure}{section}
+- \counterwithin{table}{section}
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo=FALSE, message=FALSE, warning=FALSE, comment=NA, 
+  fig.height=8, fig.width=8
+)
+options(max.print = 2000, tibble.print_max = 100)
+```
+
+
+```{r results='hide'}
+#empty environment.
+rm(list = ls())
+
+# Set directory.
+setwd("...")
+```
+
+
+
+
+```{r}
+# Load the data file wiscsem.sav.
+library(foreign)  ## package used for reading sav data files.
+library(tidyverse)  # combination of packages such as dplyr and ggplot2, and pipes (%>%) as used below.
+data <- read.spss("wiscsem.sav", use.value.labels=F, to.data.frame=TRUE)
+
+names(data)  # variable names.
+
+
+# ** Hypothesized 2-factor solution.
+library(lavaan)   # lavaan is a commonly used Structural Equation Modelling package in R.
+# For more details about lavaan package, check this website:
+#"http://lavaan.ugent.be/tutorial/index.html"
+
+# Define your model:
+#Given names to your latent variables (factors) which are the results from the observed variables.
+#Here, the first factor is given a name 'Verbal', the second is given a name 'Performance'.
+#The model seen below has no specifications other than observed variable allocations under each factor.
+#For further specifications such as fixing parameters/variances, check this webpage:
+#"http://lavaan.ugent.be/tutorial/syntax1.html"
+
+model <- '
+# measurement model
+
+Verbal =~ info + comp + arith + simil + vocab + digit
+
+Performance =~ pictcomp + parang + block + object + coding
+'
+
+# CFA model:
+# Default CFA model in lavaan fixes the first loadings to 1 for each factor in the model.
+fit <- cfa(model, data = data)
+
+
+# Path Diagram:
+#Different than LISREL, the model specified is as a string object as shown above instead of creating 
+#a path diagram. You can still get a nice and colored Path Diagram with the estimates as shown below.
+#Seen in the path diagram, the loadings of info and pictcomp variables are fixed to 1 under each factor.
+semPlot::semPaths(object = fit, what = "est", title = FALSE, layout="spring",
+                  intercepts = FALSE, 
+                  bg = "lightskyblue", edge.color = "black", edge.label.cex = 0.75,
+                  asize = 2, esize = 2,
+                  color = list(lat = rgb(255, 131, 205, maxColorValue = 255), 
+                               man = rgb(155, 253, 175, maxColorValue = 255),
+                               int = rgb(255, 255, 255, maxColorValue = 255)))
+
+
+# Output: 
+#This one line of code gives the loadings, variance estimates (measurement equations),
+#covariance between two factors, coefficient estimates for both unstandardized and standardized solution,
+#and goodness-of-fit statistics.
+
+#Unstandardized solution estimates are seen under the name 'Estimate'.
+#Standard solution estimates for this given model can be seen under 'Std.all'.
+
+# Regarding the model-data fit statistics, it is suggested to report the following indices:
+#The model chi-square, RMSEA, CFI, SRMR.
+#Check this document for more information: 
+#https://www.cscu.cornell.edu/news/Handouts/SEM_fit.pdf
+
+summary(fit, standardized=TRUE, fit.measures=TRUE)
+
+
+
+# Parameter table:
+#To check the parameters being estimated, you can use 'parTable' function provided by lavaan.
+parTable(fit)
+
+
+# Covariance matrix:
+inspect(fit, "sampstat")$cov
+
+
+
+
+# ** Fix factor variances to 1.
+#When it is not specified in the model definition, lavaan fixes the first factor loading for each
+#latent variable to 1 as shown in the previous model. This time, we will fix the variances instead.
+#You have to put 'NA' in front of the first items and fix the variance to 1 as shown.
+
+model.fixed <- '
+# measurement model
+
+Verbal =~ NA*info + comp + arith + simil + vocab + digit
+
+Performance =~ NA*pictcomp + parang + block + object + coding
+
+Verbal ~~ 1*Verbal
+Performance ~~ 1*Performance
+'
+
+# CFA model:
+fit.fixed <- cfa(model.fixed, data = data)
+
+
+# Path Diagram:
+semPlot::semPaths(object = fit.fixed, what = "est", title = FALSE, layout="spring",
+                  intercepts = FALSE, 
+                  bg = "lightskyblue", edge.color = "black", edge.label.cex = 0.75,
+                  asize = 2, esize = 2,
+                  color = list(lat = rgb(255, 131, 205, maxColorValue = 255), 
+                               man = rgb(155, 253, 175, maxColorValue = 255),
+                               int = rgb(255, 255, 255, maxColorValue = 255)))
+
+
+
+# Output: 
+summary(fit.fixed, standardized=TRUE, fit.measures=TRUE)
+
+
+
+
+
+
+# ** New model: 'coding' variable is removed from the model.
+#Pay attention that the variances are still fixed for the two factors.
+model.fixed.2 <- '
+# measurement model
+
+Verbal =~ NA*info + comp + arith + simil + vocab + digit
+
+Performance =~ NA*pictcomp + parang + block + object
+
+Verbal ~~ 1*Verbal
+Performance ~~ 1*Performance
+'
+
+# New CFA model:.
+fit.fixed.2 <- cfa(model.fixed.2, data = data)
+
+
+# Path Diagram:
+semPlot::semPaths(object = fit.fixed.2, what = "est", title = FALSE, layout="spring",
+                  intercepts = FALSE, 
+                  bg = "lightskyblue", edge.color = "black", edge.label.cex = 0.75,
+                  asize = 2, esize = 2,
+                  color = list(lat = rgb(255, 131, 205, maxColorValue = 255), 
+                               man = rgb(155, 253, 175, maxColorValue = 255),
+                               int = rgb(255, 255, 255, maxColorValue = 255)))
+
+
+# Output: 
+summary(fit.fixed.2, standardized=TRUE, fit.measures=TRUE)
+
+#
+```
+

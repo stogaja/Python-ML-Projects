@@ -1,0 +1,246 @@
+---
+title: "MESA8668 - MANOVA"
+author: "Steve"
+output:
+  pdf_document:
+fontsize: 12pt
+geometry: margin = 0.8in
+header-includes:
+- \setlength\parindent{24pt}
+- \usepackage{placeins}
+- \usepackage{setspace}
+- \usepackage{chngcntr}
+- \usepackage{array}
+- \usepackage{graphicx}
+- \usepackage{caption}
+- \counterwithin{figure}{section}
+- \counterwithin{table}{section}
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo=FALSE, message=FALSE, warning=FALSE, comment=NA, 
+  fig.height=8, fig.width=8
+)
+options(max.print = 2000, tibble.print_max = 100)
+```
+
+
+```{r results='hide'}
+#empty environment.
+rm(list = ls())
+
+# Set directory.
+setwd("...")
+```
+
+
+
+
+```{r}
+# Load the data file HBAT_200.
+library(foreign)  ## package used for reading sav data files.
+library(tidyverse)  # combination of packages such as dplyr and ggplot2, and pipes (%>%) as used below.
+data <- read.spss("HBAT_200.sav", use.value.labels=F, to.data.frame=TRUE)
+
+names(data)  # variable names.
+
+
+# Define the grouping variables (predictors x5 and x1) as categorical.
+data$x5 <- as.factor(data$x5)
+data$x1 <- as.factor(data$x1)
+
+# Define outcome variables as matrix to be used in MANOVA models.
+outcome <- as.matrix(data[,20:22])
+
+
+
+# Check the assumptions for MANOVA:
+## 1.Linearity.
+#The scatterplot matrix shows linear relationships between the covariate
+#and three dependent variables. 
+#From the plots, we can conclude that the linearity assumption is met.
+
+#outcome by x5.
+par(mfrow=c(1,1), cex = 0.80)
+pairs(~ data$x19 + data$x20 + data$x21,
+      col = c("red","blue")[unclass(data$x5)],
+      pch= c(16, 17)[unclass(data$x5)])
+
+#outcome by x1.
+par(mfrow=c(1,1), cex = 0.80)
+pairs(~ data$x19 + data$x20 + data$x21,
+      col = c("red","blue")[unclass(data$x1)],
+      pch= c(16, 17)[unclass(data$x1)])
+
+
+
+## 2. Multicollinearity.
+#Correlation matrix can help examine multicollinearity issues between the outcome variables.
+#Pair-wise correlations among the outcome variables are large, signaling multicollinearity.
+round(cor(outcome), 3)
+
+
+
+## 3. Multivariate normality of outcome variables.
+#can be checked by Mardia's Multivariate normality test provided in R package called "MVN".
+#p-value for neither the skewness nor the kurtosis is significant so the assumption is met.
+library(MVN)
+mvn(outcome, mvnTest = c("mardia"))
+
+
+
+## 4. Equality of Variance-Covariance matrices.
+#can be checked by Box's M test provided in "biotools" package.
+#p-value for neither of the grouping values is significant so the assumption is met.
+library(biotools)
+boxM(data = outcome, grouping = data$x5)
+boxM(data = outcome, grouping = data$x1)
+
+
+
+## 5. Independece of observations.
+#ICC can be checked to see if there is nesting in the data.
+#The results indicate high ICCs and nesting in the data.
+library(ICC)
+ICCbare(x = data$x5, y = data$x19, data = data)
+ICCbare(x = data$x5, y = data$x20, data = data)
+ICCbare(x = data$x5, y = data$x21, data = data)
+
+ICCbare(x = data$x1, y = data$x19, data = data)
+ICCbare(x = data$x1, y = data$x20, data = data)
+ICCbare(x = data$x1, y = data$x21, data = data)
+
+
+
+
+# MANOVA model 1: (x19, x20, x21) ~ x5.
+##Let's check the outcome variables by groups.
+library(psych)
+describeBy(outcome, data$x5, mat = T)
+
+
+##You can also use boxplots to check the group differences visually.
+##As an example:
+library(car)
+Boxplot(data$x19 ~ data$x5,
+        col = "goldenrod1", ylab = "Satisfaction")
+
+
+
+##Model1.
+mod1 <- manova(outcome ~ data$x5)  
+summary(mod1, test = "Pillai")
+summary(mod1, test = "Wilks")
+summary(mod1, test = "Hotelling-Lawley")
+summary(mod1, test = "Roy")
+
+
+
+# The equality of the groups: oneway.test() function.
+##First, check the Levene's test for homogeneity of variance across groups.
+lapply(data[,c(20:22)], function(x) leveneTest(x ~ data$x5))
+
+
+##Run F-tests for all the predictors with one line of code.
+Ftest_s_byx5 <- lapply(data[,c(20:22)], function(x) oneway.test(x ~ data$x5, var.equal = TRUE))
+
+cbind( round(data.frame("F" = sapply(Ftest_s_byx5, getElement, name = "statistic")), 3), 
+       round(data.frame(p.value = sapply(Ftest_s_byx5, getElement, name = "p.value")), 3) )
+
+
+
+
+# MANOVA model 2: (x19, x20, x21) ~ x1.
+##Let's check the outcome variables by groups.
+describeBy(outcome, data$x1, mat = T)
+
+
+##You can also use boxplots to check the group differences visually.
+##as an example:
+Boxplot(data$x19 ~ data$x1,
+        col = "goldenrod1", ylab = "Satisfaction")
+
+
+##Model2.
+mod2 <- manova(outcome ~ data$x1)  
+summary(mod2, test = "Pillai")
+summary(mod2, test = "Wilks")
+summary(mod2, test = "Hotelling-Lawley")
+summary(mod2, test = "Roy")
+
+
+
+# The equality of the groups: oneway.test() function.
+##First, check the Levene's test for homogeneity of variance across groups.
+lapply(data[,c(20:22)], function(x) leveneTest(x ~ data$x1))
+
+
+
+##Run F-tests for all the predictors with one line of code.
+Ftest_s_byx1 <- lapply(data[,c(20:22)], function(x) oneway.test(x ~ data$x1, var.equal = TRUE))
+
+cbind( round(data.frame("F" = sapply(Ftest_s_byx1, getElement, name = "statistic")), 3), 
+       round(data.frame(p.value = sapply(Ftest_s_byx1, getElement, name = "p.value")), 3) )
+
+
+
+
+
+
+# MANOVA model 3: (x19, x20, x21) ~ x1 + x5 + x1*x5.
+##Let's check the outcome variables by groups.
+describeBy(outcome, list(data$x5, data$x1), mat = T)
+
+
+
+##Model3.
+mod3 <- manova(outcome ~ data$x1*data$x5)  
+summary(mod3, test = "Pillai")
+summary(mod3, test = "Wilks")
+summary(mod3, test = "Hotelling-Lawley")
+summary(mod3, test = "Roy")
+
+
+
+# The equality of the groups: oneway.test() function.
+##First, check the Levene's test for homogeneity of variance across groups.
+lapply(data[,c(20:22)], function(x) leveneTest(x ~ data$x1*data$x5))
+
+
+
+##Run F-tests for all the predictors with one line of code.
+Ftest_s_byx1x5 <- lapply(data[,c(20:22)], function(x) oneway.test(x ~ data$x1 + data$x5 + data$x1*data$x5, 
+                                                                var.equal = TRUE))
+
+cbind( round(data.frame("F" = sapply(Ftest_s_byx1x5, getElement, name = "statistic")), 3), 
+       round(data.frame(p.value = sapply(Ftest_s_byx1x5, getElement, name = "p.value")), 3) )
+
+
+
+# Post-hoc Tests.
+#Multiple comparisons by x1 groups.
+aov_s_byx1 <- lapply(data[,c(20:22)], function(x) aov(x ~ data$x1))
+
+library(DescTools)
+PostHocTest(aov_s_byx1$x19, method = "hsd")
+PostHocTest(aov_s_byx1$x19, method = "scheffe")
+PostHocTest(aov_s_byx1$x19, method = "lsd")
+
+
+PostHocTest(aov_s_byx1$x20, method = "hsd")
+PostHocTest(aov_s_byx1$x20, method = "scheffe")
+PostHocTest(aov_s_byx1$x20, method = "lsd")
+
+
+PostHocTest(aov_s_byx1$x21, method = "hsd")
+PostHocTest(aov_s_byx1$x21, method = "scheffe")
+PostHocTest(aov_s_byx1$x21, method = "lsd")
+
+
+# Profile plots.
+interaction.plot(data$x1, data$x5, data$x19, fun = mean)
+interaction.plot(data$x1, data$x5, data$x20, fun = mean)
+interaction.plot(data$x1, data$x5, data$x21, fun = mean)
+```
+

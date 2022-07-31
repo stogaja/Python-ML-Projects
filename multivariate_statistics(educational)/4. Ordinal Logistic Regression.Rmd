@@ -1,0 +1,97 @@
+---
+title: "MESA8668 - Ordinal Logistic Regression"
+author: "Steve"
+output:
+  pdf_document:
+fontsize: 12pt
+geometry: margin = 0.8in
+header-includes:
+- \setlength\parindent{24pt}
+- \usepackage{placeins}
+- \usepackage{setspace}
+- \usepackage{chngcntr}
+- \usepackage{array}
+- \usepackage{graphicx}
+- \usepackage{caption}
+- \counterwithin{figure}{section}
+- \counterwithin{table}{section}
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo=FALSE, message=FALSE, warning=FALSE, comment=NA, 
+  fig.height=8, fig.width=8
+)
+options(max.print = 2000, tibble.print_max = 100)
+```
+
+
+```{r results='hide'}
+#empty environment.
+rm(list = ls())
+
+# Set directory.
+setwd("...")
+```
+
+
+
+
+```{r}
+# Load data file "space".
+library(foreign)
+data_space <- read.spss("space.sav", use.value.labels=F, to.data.frame=TRUE)
+
+# Variables in the dataset.
+names(data_space)
+
+
+# Make sure to format categorical variables.
+data_space$space <- as.factor(data_space$space) 
+data_space$male <- as.factor(data_space$male)
+data_space$income3 <- as.factor(data_space$income3)
+data_space$prestige3 <- as.factor(data_space$prestige3)
+data_space$politics <- as.factor(data_space$politics)
+
+
+
+# Step 1. Fit ordinal logistic regression model. space ~ male + prestige.
+# First, set the reference groups for the categorical variables.
+# function relevel() helps defining the reference group as shown below.
+data_space$space <- relevel(data_space$space, ref = "1") # reference category:"too little"
+data_space$male <- relevel(data_space$male, ref = "1") # reference group: "male"
+
+
+# Percentages of the response variable by gender.
+prop.table( table(data_space$space, data_space$male) )
+
+
+# package "ordinal" in R is commonly used for ordinal logistic regression models.
+#install.packages("ordinal")
+library(ordinal)
+
+# Run the model: space ~ male + prestige.
+OLR_mod1 <- clm(space ~ male + prestige, data = data_space)
+summary(OLR_mod1)  # output for the model.
+
+
+
+# Model fit:
+# 1. Wald test.
+# We can use 'AER' package in R.
+#install.packages("AER")
+library(AER)
+coeftest(OLR_mod1)  # Wald test output for the estimates.
+exp( coef(OLR_mod1) )  # Odds-ratios
+confint(OLR_mod1)  # provides confidence intervals for the coefficients.
+
+
+
+# 2. AIC and BIC measures.
+# First, create an intercept-only (null) model.
+OLR_null <- clm(space ~ 1, data = data_space)
+
+AIC(OLR_null); AIC(OLR_mod1) # AICs.
+BIC(OLR_null); BIC(OLR_mod1) # BICs.
+```
+

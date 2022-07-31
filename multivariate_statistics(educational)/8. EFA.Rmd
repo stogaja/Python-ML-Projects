@@ -1,0 +1,126 @@
+---
+title: "MESA8668 - Exploratory Factor Analysis"
+author: "Steve"
+output:
+  pdf_document:
+fontsize: 12pt
+geometry: margin = 0.8in
+header-includes:
+- \setlength\parindent{24pt}
+- \usepackage{placeins}
+- \usepackage{setspace}
+- \usepackage{chngcntr}
+- \usepackage{array}
+- \usepackage{graphicx}
+- \usepackage{caption}
+- \counterwithin{figure}{section}
+- \counterwithin{table}{section}
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo=FALSE, message=FALSE, warning=FALSE, comment=NA, 
+  fig.height=8, fig.width=8
+)
+options(max.print = 2000, tibble.print_max = 100)
+```
+
+
+```{r results='hide'}
+#empty environment.
+rm(list = ls())
+
+# Set directory.
+setwd("...")
+```
+
+
+
+
+```{r}
+# Load the data file rte_cereal.
+library(foreign)  ## package used for reading sav data files.
+library(tidyverse)  # combination of packages such as dplyr and ggplot2, and pipes (%>%) as used below.
+data <- read.spss("rte_cereal.sav", use.value.labels=F, to.data.frame=TRUE)
+
+names(data)  # variable names.
+
+
+# ** Correlation matrix.
+library(MVN)
+library(GPArotation)
+
+CorMat <- cor(data[,3:27], use='pairwise')
+round(CorMat, 3)
+
+# *** Pairwise correlations in visual.
+library(reshape2)
+Cor_data_list <- melt(CorMat)
+
+qplot(x = Var2, y = Var1, data = Cor_data_list, fill=value, geom="tile",
+      xlab = "", ylab = "", main = "correlation matrix heat map", cex = 0.5) +
+  scale_fill_gradient2(limits=c(-1, 1),
+                       low="pink", mid="white", high="navy")
+
+
+
+# ** Assumption check.
+library(psych)
+Sam_Size <- dim(data)[1]
+
+# Bartlett test of sphericity: the results indicate the the correlation matrix is significantly
+#different from the identity matrix suggesting that the variables are correlated and supports
+#data reduction.
+cortest.bartlett(R = CorMat, n = Sam_Size)   
+
+# Kaiser's measure of sampling adequacy: the results indicate that overall MSA is satisfactory for 
+#data reduction (larger than 0.80).
+KMO(r = CorMat)
+
+# Non-zero determinant: the determinant of the correlation matrix is not zero which suggests there
+#is no linear dependancy among the variables.
+det(CorMat)
+
+
+# ** Scree plot.
+#PCA scree plot suggest 4-component solution.
+scree(CorMat)
+
+
+
+# ** EFA with Principal Axis Factoring with no rotation.
+#We will extract four factors based on the results from the scree plot.
+EFA <- fa(CorMat, nfactors=4, rotate="none",
+          residuals = TRUE, scores = TRUE, fm="pa")
+
+# Extracted Communalities.
+EFA$communality
+
+# Loadings and total variance explained by factors.
+#50% of the total variance is explained by 4-factor solution.
+EFA$loadings  
+
+
+
+
+# ** EFA with Principal Axis Factoring with varimax rotation.
+#We will extract four factors based on the results from the scree plot.
+EFA_var <- fa(CorMat, nfactors=4, rotate="varimax",
+          residuals = TRUE, scores = TRUE, fm="pa")
+
+# Loadings and total variance explained by factors.
+#50% of the total variance is explained by 4-factor solution.
+# Rotated factor matrix - Loadings.
+EFA_var$loadings
+
+# Rotated factor matrix - Eigenvalues.
+round(EFA$values, 3)  
+
+
+# Factor Score covariance matrix.
+EFA_var$r.scores
+
+
+#
+```
+

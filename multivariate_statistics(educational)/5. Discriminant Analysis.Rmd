@@ -1,0 +1,252 @@
+---
+title: "MESA8668 - Discriminant Analysis"
+author: "Steve"
+output:
+  pdf_document:
+fontsize: 12pt
+geometry: margin = 0.8in
+header-includes:
+- \setlength\parindent{24pt}
+- \usepackage{placeins}
+- \usepackage{setspace}
+- \usepackage{chngcntr}
+- \usepackage{array}
+- \usepackage{graphicx}
+- \usepackage{caption}
+- \counterwithin{figure}{section}
+- \counterwithin{table}{section}
+---
+
+```{r, setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo=FALSE, message=FALSE, warning=FALSE, comment=NA, 
+  fig.height=8, fig.width=8
+)
+options(max.print = 2000, tibble.print_max = 100)
+```
+
+
+```{r results='hide'}
+#empty environment.
+rm(list = ls())
+
+# Set directory.
+setwd("...")
+```
+
+
+
+
+```{r}
+# Load the data files HBAT and HBAT_splits.
+library(foreign)  ## package used for reading sav data files.
+library(tidyverse)  # combination of packages such as dplyr and ggplot2, and pipes (%>%) as used below.
+HBAT <- read.spss("HBAT.sav", use.value.labels=F, to.data.frame=TRUE)
+HBAT_SPLITS <- read.spss("HBAT_SPLITS.sav", use.value.labels=F, to.data.frame=TRUE)
+
+# Merge the two files so that you can filter the cases by split variables.
+data <- merge(HBAT, HBAT_SPLITS, by.x = "id", by.y = "id")
+
+names(data)  # variable names.
+
+# Format the outcome variable (y=x4) as categorical.
+data$x4 <- as.factor(data$x4)
+
+
+## Define Training data with split60=0.
+data_train <- data %>% filter(split60==0)
+
+## Define testing data with split60=1.
+data_test <- data %>% filter(split60==1)
+
+
+# Two-Group Discriminant Analysis.
+
+# First, check the descriptive statistics to see which predictors (x6-x18) show differences among groups.
+library(psych)  # provides the function describe() for descriptive statistics.
+
+# create grouped subset from the data.
+data_train_USA <- data_train %>% filter(x4 %in% c(0))
+data_train_rest <- data_train %>% filter(x4 %in% c(1))
+
+# Univariate descriptive statistics within each group, and combined.
+describe(data_train_USA[,7:19])  # descriptives for USA/North America data.
+describe(data_train_rest[,7:19])  # descriptives for Outside North America data.
+describe(data_train[,7:19])  # descriptives for total.
+
+
+# In R, it's better to create the model as a manova model at first to be able to use some functions.
+x <- as.matrix(data_train[,7:19])
+mod <- manova(x ~ data_train$x4)  
+
+
+# The equality of the groups: oneway.test() function.
+# 1. Run ttests for all the predictors with one line of code.
+Ftest_s <- lapply(data_train[,c(7:19)], function(x) oneway.test(x ~ data_train$x4, var.equal = TRUE))
+
+# 2. Then, you can either get the results for a specific predictor..
+Ftest_s$x6
+
+# ...or, you can get the list of p-values (or any other information provided by ttest function)
+cbind( round(data.frame("F" = sapply(Ftest_s, getElement, name = "statistic")), 3), 
+       round(data.frame(p.value = sapply(Ftest_s, getElement, name = "p.value")), 3) )
+
+
+
+# Homogeneity of variance-covariance matrix assumption
+#can be checked by Box's M test provided in biotools package.
+#install.packages("biotools")
+library(biotools)
+boxM(data = data_train[,c(7:19)], grouping = data_train$x4)
+
+
+# Wilks' Lambda statistic to test whether the scores calculated from the discriminant function(s) 
+#have different mean values between the groups.
+summary(mod, test="Wilks")
+
+
+
+# Linear discriminant analysis.
+lda_mod_coef <- lda(data_train$x4 ~ ., data_train[,c(7:19)])
+round(lda_mod_coef$scaling, 3)  #unstandardized coefficients.
+
+
+#install.packages("candisc")  #another package commonly used for discriminant analysis.
+library(candisc)  #this package will help getting standardized coefficients.
+cca <- mod %>% candisc()  # converting the model to disciminant analysis model.
+round(cca$means, 3)  #group centroids.
+round(cca$coeffs.raw, 3) #unstandardized coefficients.
+round(cca$coeffs.std, 3) #standardized coefficients.
+
+
+# predict discriminant scores, class memberships, and posterior probabilities based on the model.
+disc_scores <- predict(lda_mod_coef)$x
+class_memb <- predict(lda_mod_coef)$class
+post_prob <- predict(lda_mod_coef)$posterior
+
+# Hit ratios for the training data: 
+# combination of 0-0 and 1-1 cells 
+# (43.3% + 51.7% = 95.0%)
+table(data_train$x4, class_memb) # hit ratios as number of cases.
+round( prop.table(table(data_train$x4, class_memb)) , 3) # hit ratios as percentages.
+
+# Hit ratios for the testing data: 
+# combination of 0-0 and 1-1 cells 
+# (30.0% + 65.0% = 95.0%)
+lda_mod_coef_test <- lda(data_test$x4 ~ ., data_test[,c(7:19)])
+round(lda_mod_coef_test$scaling, 3)
+
+disc_scores_test <- predict(lda_mod_coef_test)$x
+class_memb_test <- predict(lda_mod_coef_test)$class
+post_prob_test <- predict(lda_mod_coef_test)$posterior
+
+table(data_test$x4, class_memb_test) # hit ratios as number of cases.
+round( prop.table(table(data_test$x4, class_memb_test)) , 3) # hit ratios as percentages.
+```
+
+
+### Three-group Discriminant Analysis
+
+```{r}
+# Load the data files HBAT and HBAT_splits.
+library(foreign)  ## package used for reading sav data files.
+library(tidyverse)  # combination of packages such as dplyr and ggplot2, and pipes (%>%) as used below.
+HBAT <- read.spss("HBAT.sav", use.value.labels=F, to.data.frame=TRUE)
+HBAT_SPLITS <- read.spss("HBAT_SPLITS.sav", use.value.labels=F, to.data.frame=TRUE)
+
+# Merge the two files so that you can filter the cases by split variables.
+data <- merge(HBAT, HBAT_SPLITS, by.x = "id", by.y = "id")
+
+names(data)  # variable names.
+
+# Format the outcome variable (y=x1) as categorical.
+data$x1 <- as.factor(data$x1)
+
+
+## Define Training data with split60=0.
+data_train <- data %>% filter(split60==0)
+
+## Define testing data with split60=1.
+data_test <- data %>% filter(split60==1)
+
+
+
+# First, check the descriptive statistics to see which predictors (x6-x18) show differences among groups.
+library(psych)  # provides the function describe() for descriptive statistics.
+
+# Univariate descriptive statistics within each group, and combined.
+data_train[,c(2,7:19)] %>% filter(x1 %in% c(1)) %>% describe()  # descriptives for x1=1.
+data_train[,c(2,7:19)] %>% filter(x1 %in% c(2)) %>% describe()  # descriptives for x1=2.
+data_train[,c(2,7:19)] %>% filter(x1 %in% c(3)) %>% describe()  # descriptives for x1=3.
+describe(data_train[,c(2,7:19)])  # descriptives for total.
+
+
+
+
+# The equality of the groups: oneway.test() function.
+# 1. Run ttests for all the predictors with one line of code.
+Ftest_s <- lapply(data_train[,c(7:19)], function(x) oneway.test(x ~ data_train$x1, var.equal = TRUE))
+
+# 2. Then, you can either get the results for a specific predictor..
+Ftest_s$x6
+
+# ...or, you can get the list of p-values (or any other information provided by ttest function)
+cbind( round(data.frame("F" = sapply(Ftest_s, getElement, name = "statistic")), 3), 
+       round(data.frame(p.value = sapply(Ftest_s, getElement, name = "p.value")), 3) )
+
+
+
+
+# Homogeneity of variance-covariance matrix assumption
+#can be checked by Box's M test provided in biotools package.
+#install.packages("biotools")
+library(biotools)
+biotools::boxM(data = data_train[,c(7,19)], grouping = data_train$x1)
+
+
+
+
+# Linear discriminant analysis with only the predictors x6 and x18 in the model.
+lda_mod_coef.1 <- lda(data_train$x1 ~ ., data_train[,c(7,19)])
+round(lda_mod_coef.1$scaling, 3)  #unstandardized coefficients.
+
+
+#install.packages("candisc")  #another package commonly used for discriminant analysis.
+library(candisc)  #this package will help getting standardized coefficients.
+# In R, it's better to create the model as a manova model at first to be able to use some functions.
+x <- as.matrix(data_train[,c(7,19)])
+mod <- manova(x ~ data_train$x1) 
+
+cca <- mod %>% candisc()  # converting the model to disciminant analysis model.
+round(cca$means, 3)  #group centroids.
+round(cca$coeffs.raw, 3) #unstandardized coefficients.
+round(cca$coeffs.std, 3) #standardized coefficients.
+
+
+
+# predict discriminant scores, class memberships, and posterior probabilities based on the model.
+disc_scores.1 <- predict(lda_mod_coef.1)$x
+class_memb.1 <- predict(lda_mod_coef.1)$class
+post_prob.1 <- predict(lda_mod_coef.1)$posterior
+
+# Hit ratios for the training data: 
+# combination of 1-1, 2-2, and 3-3 cells 
+# (35.0% + 11.7%  + 40.0% = 86.7%)
+table(data_train$x1, class_memb.1) # hit ratios as number of cases.
+round( prop.table(table(data_train$x1, class_memb.1)) , 3) # hit ratios as percentages.
+
+
+# Hit ratios for the testing data: 
+# combination of 1-1, 2-2, and 3-3 cells 
+# (10.0% + 47.5% + 12.5% = 70.0%)
+lda_mod_coef.2 <- lda(data_test$x1 ~ ., data_test[,c(7,19)])
+round(lda_mod_coef.2$scaling, 3)  #unstandardized coefficients.
+
+disc_scores.2 <- predict(lda_mod_coef.2)$x
+class_memb.2 <- predict(lda_mod_coef.2)$class
+post_prob.2 <- predict(lda_mod_coef.2)$posterior
+
+table(data_test$x1, class_memb.2) # hit ratios as number of cases.
+round( prop.table(table(data_test$x1, class_memb.2)) , 3) # hit ratios as percentages.
+```
+
