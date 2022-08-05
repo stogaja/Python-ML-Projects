@@ -1,0 +1,124 @@
+---
+title: "Modelling the relationship between commodity prices"
+author: "Steve"
+date: '2022-08-01'
+output: pdf_document
+---
+
+```{r}
+rm(list = ls())
+graphics.off()
+```
+
+```{r}
+library(vars)
+```
+
+```{r}
+# reading the dataset
+data <- read.csv("comodity_price.csv")
+```
+
+```{r}
+# assigning the different minerals to variables for ease of access
+gold <- ts(log(data$gold), start = c(1993, 11), frequency = 12)
+silver <- ts(log(data$silver), start = c(1993, 11), frequency = 12)
+plat <- ts(log(data$plat), start = c(1993, 11), frequency = 12)
+pall <- ts(log(data$pall), start = c(1993, 11), frequency = 12)
+```
+
+```{r}
+# plotting the gold and silver to ensure the variables were assigned correctly
+par(mfrow = c(1, 1), mar = c(2.2, 2.2, 1, 2.2), cex = 0.8)
+plot.ts(cbind(gold, silver), plot.type = "single", ylab = "", 
+    col = 4:3)
+legend("topleft", legend = c("gold", "silver"), col = 4:3, 
+    lty = 1, bty = "n")
+```
+
+```{r}
+# checking the trend in gold using ADF
+adfg1 <- ur.df(gold, type = "trend", selectlags = c("BIC"))
+summary(adfg1)
+```
+
+```{r}
+# checking the lags for gold for better understanding
+adfg2 <- ur.df(diff(gold), selectlags = c("BIC"))
+summary(adfg2)
+```
+# Model Selection and Estimation
+```{r}
+# assigning gold and silver to a variable which is united for model selection and estimation
+dat <- ts.union(gold, silver)
+```
+
+```{r}
+# estimating the long run regression
+gold.eq <- lm(gold ~ silver, data = data)
+summary(gold.eq)
+```
+
+```{r}
+# generating a plot for gold residuals
+plot.ts(gold.eq$residuals)
+```
+
+```{r}
+# performing adf to confirm that the plot above is stationery
+error.gold <- ur.df(gold.eq$residuals, lags = 1, type = "none")
+summary(error.gold)
+```
+
+```{r}
+# error correction 
+gold.d <- diff(gold)[-1]
+silver.d <- diff(silver)[-1]
+error.ecm1 <- gold.eq$residuals[-1:-2]
+gold.d1 <- diff(gold)[-(length(gold) - 1)]
+silver.d1 <- diff(silver[-(length(silver) - 1)])
+```
+
+```{r}
+ecm.gold <- lm(gold.d ~ error.ecm1 + gold.d1 + silver.d1)
+summary(ecm.gold)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
